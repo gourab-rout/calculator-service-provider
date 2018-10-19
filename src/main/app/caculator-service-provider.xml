@@ -1,0 +1,50 @@
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:mulexml="http://www.mulesoft.org/schema/mule/xml" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit-soap="http://www.mulesoft.org/schema/mule/apikit-soap" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/apikit-soap http://www.mulesoft.org/schema/mule/apikit-soap/current/mule-apikit-soap.xsd
+http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/current/mule-xml.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+  <http:listener-config name="api-httpListenerConfig" host="${http.host}" port="${http.port}" doc:name="HTTP Listener Configuration"/>
+  <apikit-soap:config name="/ICalculatorService/ICalculatorPort/api-config" wsdlUrl="calculator.wsdl" serviceName="ICalculatorService" portName="ICalculatorPort" doc:name="APIkit SOAP: Configuration"/>
+  <flow name="api-main">
+    <http:listener path="/calculator" config-ref="api-httpListenerConfig" doc:name="/ICalculatorService/ICalculatorPort" />
+    <apikit-soap:router config-ref="/ICalculatorService/ICalculatorPort/api-config" doc:name="SOAP Router"/>
+  </flow>
+  <flow name="mul:/ICalculatorService/ICalculatorPort/api-config">
+        <mulexml:dom-to-xml-transformer doc:name="DOM to XML"/>
+        <logger message="Request received : #[payload]" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace ns0 http://calculator.craft/
+%var num1 = payload.mul.arg0 when payload.mul.arg0? and payload.mul.arg0 != "" otherwise 1
+%var num2 = payload.mul.arg1 when payload.mul.arg1? and payload.mul.arg1 != "" otherwise 1
+
+---
+{
+	ns0#mulResponse: {
+		return: num1 * num2
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+
+  </flow>
+  <flow name="sum:/ICalculatorService/ICalculatorPort/api-config">
+    <mulexml:dom-to-xml-transformer doc:name="DOM to XML"/>
+        <logger message="Request received : #[payload]" level="INFO" doc:name="Logger"/>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/xml
+%namespace ns0 http://calculator.craft/
+%var num1 = payload.sum.arg0 when payload.sum.arg0? and payload.sum.arg0 != "" otherwise 0
+%var num2 = payload.sum.arg1 when payload.sum.arg1? and payload.sum.arg1 != "" otherwise 0
+
+---
+{
+	ns0#sumResponse: {
+		return: num1 + num2
+	}
+}]]></dw:set-payload>
+        </dw:transform-message>
+  </flow>
+</mule>
